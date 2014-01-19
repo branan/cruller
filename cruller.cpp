@@ -44,7 +44,7 @@ Object* Identifier::eval() {
 Object* Fun::apply(List* args) {
   std::vector<llvm::GenericValue> vals;
   while(args) {
-    Object* obj = args->car->eval();
+    Object* obj = args->car;
     llvm::GenericValue v;
     v.PointerVal = obj;
     vals.push_back(v);
@@ -57,13 +57,20 @@ Object* Fun::apply(List* args) {
 extern "C" {
   Object* add(Object* a, Object* b) {
     Number *an, *bn, *result;
-    an = dynamic_cast<Number*>(a);
-    bn = dynamic_cast<Number*>(b);
+    an = dynamic_cast<Number*>(a->eval());
+    bn = dynamic_cast<Number*>(b->eval());
     result = new Number(an->val + bn->val);
     return result;
   }
+
+  Object* def(Object* a, Object* b) {
+    Identifier* ai = dynamic_cast<Identifier*>(a);
+    symbol_table[ai->name] = b->eval();
+    return b;
+  }
 }
 
+// This creates the LLVM stub to call out to our actual add function (above)
 Fun* buildAddFunction() {
   std::vector<llvm::Type*> args;
   args.push_back(Builder.getInt8PtrTy());
@@ -75,20 +82,34 @@ Fun* buildAddFunction() {
   final_fun->the_fun = the_func;
   return final_fun;
 }
-extern int yyparse();
-extern Object* program;
 
+Fun* buildDefFunction() {
+  std::vector<llvm::Type*> args;
+  args.push_back(Builder.getInt8PtrTy());
+  args.push_back(Builder.getInt8PtrTy());
+  llvm::FunctionType* funType = llvm::FunctionType::get(Builder.getInt8PtrTy(), args, false);
+  llvm::Constant* defFunc = m->getOrInsertFunction("def", funType);
+  llvm::Function* the_func = (llvm::Function*)defFunc;
+  Fun* final_fun = new Fun;
+  final_fun->the_fun = the_func;
+  return final_fun;
+}
+
+extern int yyparse();
+extern std::vector<Object*> program;
 int main() {
   m = new llvm::Module("test", llvm::getGlobalContext());
   llvm::FunctionPassManager fpm(m);
   e = llvm::EngineBuilder(m).create();
 
   symbol_table["add"] = buildAddFunction();
-  
+  symbol_table["def"] = buildDefFunction();
 
   yyparse();
 
-  Object* result = program->eval();
-  Number* num = (Number*)result;
-  cout << num->val << endl;
+  for(int i = 0; i < program.size(); ++i) {
+    Object* result = program[i]->eval();
+    Number* num = (Number*)result;
+    cout << num->val << endl;
+  }
 }

@@ -1,8 +1,9 @@
 %{
 #include <stdio.h>
+#include <vector>
 #include "cruller.hpp"
 
-Object* program;
+std::vector<Object*> program;
  
 extern int yylex();
 void yyerror(const char *str) {
@@ -34,8 +35,10 @@ extern "C" int yywrap() {
 %start program
 
 %%
-program: sexpr              { program = $1; }
+program: sexpr_list
     ;
+sexpr_list:
+    | sexpr_list sexpr      { program.push_back($2); }
 sexpr: atom                 { $$ = $1; }
     | list                  { $$ = $1; }
     ;
