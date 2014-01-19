@@ -4,5 +4,5 @@
 
 Two things:
 
-1. It has two 'l's, as does LLVM
+1. It has two 'l's, to go with LLVM
 2. Its syntax and special forms are heavily influenced by Clojure, and the words are kinda similar

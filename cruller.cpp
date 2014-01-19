@@ -96,7 +96,7 @@ Fun* buildDefFunction() {
 }
 
 extern int yyparse();
-extern std::vector<Object*> program;
+extern List* program;
 int main() {
   m = new llvm::Module("test", llvm::getGlobalContext());
   llvm::FunctionPassManager fpm(m);
@@ -107,9 +107,10 @@ int main() {
 
   yyparse();
 
-  for(int i = 0; i < program.size(); ++i) {
-    Object* result = program[i]->eval();
+  while(program) {
+    Object* result = program->car->eval();
     Number* num = (Number*)result;
     cout << num->val << endl;
+    program = program->cdr;
   }
 }

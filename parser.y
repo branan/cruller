@@ -3,7 +3,7 @@
 #include <vector>
 #include "cruller.hpp"
 
-std::vector<Object*> program;
+List* program;
  
 extern int yylex();
 void yyerror(const char *str) {
@@ -35,10 +35,8 @@ extern "C" int yywrap() {
 %start program
 
 %%
-program: sexpr_list
+program: members            { program = $1 }
     ;
-sexpr_list:
-    | sexpr_list sexpr      { program.push_back($2); }
 sexpr: atom                 { $$ = $1; }
     | list                  { $$ = $1; }
     ;
